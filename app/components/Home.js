@@ -1,15 +1,68 @@
 "use client";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { useEffect } from "react";
-import { FaMicrophoneSlash, FaVideoSlash, FaChevronDown } from "react-icons/fa";
+import { useState, useEffect, useRef } from "react";
+import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaChevronDown } from "react-icons/fa";
 import { MdContentCopy } from "react-icons/md";
 
 function Home({ adminId, posterId }) {
+  const [isMicOn, setIsMicOn] = useState(true);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [stream, setStream] = useState(null);
+  const videoRef = useRef(null);
+
   useEffect(() => {
     Cookies.set("adminId", adminId);
     Cookies.set("posterId", posterId);
   }, [adminId, posterId]);
+
+  useEffect(() => {
+    if (isCameraOn && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [isCameraOn, stream]);
+
+  useEffect(() => {
+    async function startMedia() {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        setStream(mediaStream);
+      } catch (err) {
+        console.error("Error accessing media devices:", err);
+      }
+    }
+
+    startMedia();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  const toggleMic = () => {
+    if (stream) {
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !isMicOn;
+        setIsMicOn(!isMicOn);
+      }
+    }
+  };
+
+  const toggleCamera = () => {
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !isCameraOn;
+        setIsCameraOn(!isCameraOn);
+      }
+    }
+  };
 
   const router = useRouter();
 
@@ -39,30 +92,57 @@ function Home({ adminId, posterId }) {
       <main className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 px-6 py-8 max-w-7xl mx-auto w-full">
         {/* Left Side: Video Preview */}
         <div className="w-full md:w-[60%] aspect-video bg-[#202124] rounded-lg relative overflow-hidden shadow-lg flex items-center justify-center">
-          {/* Placeholder/Black screen */}
-          <div className="w-full h-full flex flex-col items-center justify-center">
-             {/* This space would normally show the webcam feed */}
-          </div>
+          {/* Video element or placeholder */}
+          {isCameraOn ? (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover transform scale-x-[-1]"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-[#202124]">
+              <div className="w-20 h-20 rounded-full bg-[#5f6368] flex items-center justify-center text-white text-3xl font-medium mb-4">
+                C
+              </div>
+              <p className="text-white text-lg font-medium">Camera is off</p>
+            </div>
+          )}
 
           {/* Controls Area */}
-          <div className="absolute bottom-6 flex gap-4">
+          <div className="absolute bottom-6 flex gap-4 z-10">
             {/* Mic Button */}
             <div className="relative group">
-              <button className="w-12 h-12 rounded-full bg-[#ea4335] flex items-center justify-center text-white hover:bg-[#d93025] transition-colors">
-                <FaMicrophoneSlash size={20} />
+              <button
+                onClick={toggleMic}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors ${
+                  isMicOn ? "bg-[#3c4043] hover:bg-[#4a4e52]" : "bg-[#ea4335] hover:bg-[#d93025]"
+                }`}
+              >
+                {isMicOn ? <FaMicrophone size={20} /> : <FaMicrophoneSlash size={20} />}
               </button>
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#f9ab00] rounded-full border-2 border-[#202124] flex items-center justify-center text-[#202124] font-bold text-[10px]">
-                !
-              </div>
+              {!isMicOn && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#f9ab00] rounded-full border-2 border-[#202124] flex items-center justify-center text-[#202124] font-bold text-[10px]">
+                  !
+                </div>
+              )}
             </div>
             {/* Camera Button */}
             <div className="relative group">
-              <button className="w-12 h-12 rounded-full bg-[#ea4335] flex items-center justify-center text-white hover:bg-[#d93025] transition-colors">
-                <FaVideoSlash size={20} />
+              <button
+                onClick={toggleCamera}
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-colors ${
+                  isCameraOn ? "bg-[#3c4043] hover:bg-[#4a4e52]" : "bg-[#ea4335] hover:bg-[#d93025]"
+                }`}
+              >
+                {isCameraOn ? <FaVideo size={20} /> : <FaVideoSlash size={20} />}
               </button>
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#f9ab00] rounded-full border-2 border-[#202124] flex items-center justify-center text-[#202124] font-bold text-[10px]">
-                !
-              </div>
+              {!isCameraOn && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#f9ab00] rounded-full border-2 border-[#202124] flex items-center justify-center text-[#202124] font-bold text-[10px]">
+                  !
+                </div>
+              )}
             </div>
           </div>
         </div>
